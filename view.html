@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เอกสารจาก softlight</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="img/favicon-64.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Code:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css?v=1.0.0">
+<style>
+  .viewer { max-width: 900px; margin: 0 auto; padding: 16px var(--gutter) 48px; display: grid; gap: 14px; }
+  .viewer-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .viewer-bar h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .viewer-amt { font-size: 14px; color: var(--muted); }
+  .viewer-amt b { color: var(--ink); font-size: 18px; font-family: var(--mono); }
+  .viewer .preview { padding: 12px; }
+  .viewer-msg { padding: 32px 20px; text-align: center; color: var(--muted); }
+  .viewer-foot { font-size: 12px; color: var(--muted); text-align: center; }
+  @media print { .viewer-bar, .viewer-foot { display: none !important; } .viewer { padding: 0; max-width: none; } }
+</style>
+</head>
+<body>
+<main class="viewer">
+  <div class="viewer-bar" id="bar" hidden>
+    <div><h1 id="vTitle"></h1><p class="viewer-amt" id="vAmt"></p></div>
+    <button type="button" class="btn btn-primary" id="btnPrint"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>พิมพ์ / บันทึก PDF</button>
+  </div>
+  <div class="preview" id="wrap"><div class="viewer-msg" id="msg">กำลังเปิดเอกสาร…</div><div class="paper" id="paper" hidden></div></div>
+  <p class="viewer-foot">เอกสารนี้ส่งจาก softlight ผ่าน softlight Finance · ลิงก์นี้เปิดได้เฉพาะผู้ที่ได้รับลิงก์</p>
+</main>
+<script src="js/config.js?v=1.0.0"></script>
+<script src="js/core.js?v=1.0.0"></script>
+<script src="js/drive.js?v=1.0.0"></script>
+<script>
+  // เปิดบิลจากลิงก์ view.html#<fileId> — อ่านไฟล์สาธารณะใน Google Drive ของ softlight (ไม่ต้องเข้าสู่ระบบ)
+  (async () => {
+    const id = decodeURIComponent((location.hash || '').slice(1)).replace(/[^\w-]/g, '');
+    const fail = t => { $('msg').textContent = t; };
+    if (!id) return fail('ลิงก์ไม่ครบ — กรุณาขอลิงก์ใหม่จากผู้ส่ง');
+    try {
+      const d = await Drive.readPublic(id);
+      const T = docTitle(d, d.seller), t = totals(d);
+      document.title = `${T.th} ${d.no} — ${d.seller.name || 'softlight'}`;
+      $('paper').innerHTML = renderPaperHtml(d, d.seller);
+      $('paper').hidden = false; $('msg').hidden = true;
+      const st = d.void ? ['void', 'ยกเลิกแล้ว'] : d.type === 'INV' ? [d.status, (STATUS.INV || {})[d.status] || ''] : d.type === 'QT' ? [d.status, (STATUS.QT || {})[d.status] || ''] : ['issued', 'ชำระแล้ว'];
+      $('vTitle').innerHTML = `${esc(T.th)} <span class="mono">${esc(d.no)}</span> ${st[1] ? `<span class="badge st-${esc(st[0])}">${esc(st[1])}</span>` : ''}`;
+      $('vAmt').innerHTML = `ยอดสุทธิ <b>${money(t.grand)}</b> บาท${d.wht ? ` · ชำระหลังหัก ณ ที่จ่าย ${money(t.pay)} บาท` : ''}`;
+      $('bar').hidden = false;
+      const fit = () => { const p = $('paper'), w = $('wrap'); p.style.zoom = ''; const avail = w.clientWidth - 24; if (p.offsetWidth > avail) p.style.zoom = String(Math.max(.3, avail / p.offsetWidth)); };
+      fit(); addEventListener('resize', fit);
+      addEventListener('beforeprint', () => { $('paper').style.zoom = ''; }); addEventListener('afterprint', fit);
+      $('btnPrint').onclick = () => { $('paper').style.zoom = ''; print(); };
+    } catch (e) { fail(e.message); }
+  })();
+</script>
+</body>
+</html>
