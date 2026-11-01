@@ -1,7 +1,7 @@
 // softlight Finance — หน้าจอทั้งหมด
 //   #home ภาพรวม · #docs เอกสาร · #doc/<id> แก้ไขเอกสาร · #customers ลูกค้า · #subs Subscription · #reports ภาษี/รายงาน · #settings ตั้งค่า
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const D = () => Store.data();
 const seller = () => D().seller;
 const settings = () => D().settings;

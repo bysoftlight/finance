@@ -129,7 +129,13 @@ const Drive = (() => {
     const key = cfg().apiKey;
     if (!key) throw new Error('ยังไม่ได้ตั้งค่า API key');
     const r = await fetch(`${API}/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(key)}`);
-    if (r.status === 404 || r.status === 403) throw new Error('ไม่พบเอกสารนี้ หรือผู้ออกบิลยกเลิกการแชร์แล้ว');
+    if (r.status === 403 || r.status === 400) {
+      const t = await r.text().catch(() => '');
+      // key ตั้งค่าผิด (ไม่ได้อนุญาต Drive API / จำกัดเว็บไซต์ไม่ตรง) ≠ ลิงก์ถูกยกเลิก
+      if (/referer|API key|api key|blocked|has not been used|disabled/i.test(t) && !/insufficientFilePermissions|notFound/i.test(t)) throw new Error('ระบบยังตั้งค่าการเปิดบิลไม่เรียบร้อย (API key) — กรุณาแจ้งผู้ส่งบิล');
+      throw new Error('ไม่พบเอกสารนี้ หรือผู้ออกบิลยกเลิกการแชร์แล้ว');
+    }
+    if (r.status === 404) throw new Error('ไม่พบเอกสารนี้ หรือผู้ออกบิลยกเลิกการแชร์แล้ว');
     if (!r.ok) throw new Error('เปิดเอกสารไม่ได้ (' + r.status + ')');
     return r.json();
   }
